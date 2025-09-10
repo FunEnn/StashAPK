@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { StatusBar, Text, View, TextInput, ActivityIndicator, Alert } from 'react-native';
-import { fetchAPKData } from '../../lib/api';
-import APKList from '../../components/APKList';
 import { applyUpdate, isUpdateAvailable } from '@/lib/utils/updates';
+import Constants from 'expo-constants';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Platform, Text, TextInput, View } from 'react-native';
+import APKList from '../../components/APKList';
 import { CustomAlert } from '../../components/common/CustomAlert';
+import DarkModeToggle from '../../components/DarkModeToggle';
+import { fetchAPKData } from '../../lib/api';
+import { useTheme } from '../../hooks/ThemeContext';
 
 export default function HomeScreen() {
   const [apks, setApks] = useState<any[]>([]);
@@ -23,6 +26,8 @@ export default function HomeScreen() {
     message: '',
     buttons: [],
   });
+
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     loadAPKs();
@@ -84,19 +89,27 @@ export default function HomeScreen() {
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#111827" />
-      <View className="flex-1 p-4 bg-gray-50">
-        <TextInput
-          className="bg-white p-3 rounded-lg mb-4"
-          placeholder="搜索应用..."
-          value={search}
-          onChangeText={setSearch}
-        />
+      <View
+        className="flex-1 p-4 bg-gray-50 dark:bg-gray-900"
+        style={{ paddingTop: Platform.OS === 'android' ? Constants.statusBarHeight : 0 }}
+      >
+        <View className="flex-row items-center mb-4">
+          <TextInput
+            className="flex-1 bg-white dark:bg-gray-800 p-3 rounded-lg text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+            placeholder="搜索应用..."
+            placeholderTextColor={isDarkMode ? '#9ca3af' : '#6b7280'}
+            value={search}
+            onChangeText={setSearch}
+          />
+          <DarkModeToggle />
+        </View>
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size="large" color={isDarkMode ? '#3b82f6' : '#0000ff'} />
+          </View>
         ) : apks.length === 0 ? (
           <View className="flex-1 justify-center items-center">
-            <Text className="text-gray-500">暂无APK数据</Text>
+            <Text className="text-gray-500 dark:text-gray-400">暂无APK数据</Text>
           </View>
         ) : (
           <APKList apks={filteredApks} />

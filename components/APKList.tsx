@@ -13,7 +13,7 @@ export default function APKList({ apks }: APKListProps) {
   return (
     <View className="flex-row flex-wrap p-2">
       {apks.map((apk, index) => (
-        <View key={index} className="w-1/2 p-1">
+        <View key={index} className="w-1/3 p-1">
           <APKItem {...apk} />
         </View>
       ))}
