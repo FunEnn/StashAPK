@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+.web/
+dist/
+coverage/
+*.min.js
+.env
+.env.*
+!.env.example
