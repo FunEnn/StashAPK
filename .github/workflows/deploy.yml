@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - apk-data-update 
     paths:
       - 'apk-data/**'
       - '.github/workflows/deploy.yml'
