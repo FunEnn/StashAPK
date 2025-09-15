@@ -63,6 +63,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
     "postcss": "^8.5.6",
+    "react-native-worklets": "^0.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.3"
   },
