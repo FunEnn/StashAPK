@@ -1,29 +1,32 @@
 import { FontAwesome } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import Constants from 'expo-constants';
+import { Tabs, useRouter } from 'expo-router';
+import { Platform, View } from 'react-native';
+import AppHeader from '../../components/header/AppHeader';
+import { SearchProvider } from '../../contexts/SearchContext';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+  const router = useRouter();
+  const paddingTop = Platform.OS === 'android' ? Constants.statusBarHeight : 0;
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colorScheme === 'dark' ? '#60a5fa' : '#2563eb',
-        tabBarInactiveTintColor: colorScheme === 'dark' ? '#94a3b8' : '#64748b',
-        tabBarStyle: {
-          backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#ffffff',
-          borderTopColor: colorScheme === 'dark' ? '#374151' : '#e5e7eb',
-        },
-        headerShown: false,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: '首页',
-          tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
-        }}
-      />
-    </Tabs>
+    <SearchProvider>
+      <View style={{ paddingTop }} className="flex-1 bg-gray-50 dark:bg-gray-900">
+        <AppHeader onHomePress={() => router.push('/')} />
+        <Tabs
+          screenOptions={{
+            tabBarStyle: { display: 'none' },
+            headerShown: false,
+          }}
+        >
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: '首页',
+              tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
+            }}
+          />
+        </Tabs>
+      </View>
+    </SearchProvider>
   );
 }

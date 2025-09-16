@@ -1,3 +1,4 @@
+import { useColorTheme } from '@/hooks/useColorTheme';
 import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import ImageWithFallback from './common/ImageWithFallback';
 
@@ -8,7 +9,7 @@ interface APKItemProps {
 }
 
 export default function APKItem({ name, icon, downloadUrl }: APKItemProps) {
-  // 默认图标
+  const { isDarkMode } = useColorTheme();
   const defaultIcon = 'https://s2.loli.net/2025/09/05/sHNmMYuk4yB3jr9.jpg';
 
   const handleDownload = async () => {
@@ -25,23 +26,28 @@ export default function APKItem({ name, icon, downloadUrl }: APKItemProps) {
   return (
     <Pressable
       onPress={handleDownload}
-      android_ripple={{ color: '#e5e7eb' }}
-      className="rounded-xl"
+      android_ripple={{ color: isDarkMode ? '#1f2937' : '#e5e7eb' }}
+      className="rounded-2xl overflow-hidden"
     >
-      <View className="p-3 rounded-xl mb-3 border border-gray-200 dark:border-gray-700 items-center bg-white dark:bg-gray-800 shadow-sm dark:shadow-gray-800">
-        <View className="mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+      <View className="bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-2xl border">
+        <View className="h-28 overflow-hidden rounded-t-2xl">
           <ImageWithFallback
             source={icon || defaultIcon}
-            className="w-14 h-14 mx-auto rounded-md"
+            style={{ width: '100%', height: '100%' }}
             contentFit="cover"
           />
         </View>
-        <Text
-          className="text-center text-xs font-semibold text-gray-700 dark:text-gray-200"
-          numberOfLines={1}
-        >
-          {name}
-        </Text>
+
+        {/* 名称 */}
+        <View className="p-3">
+          <Text
+            className="text-gray-800 dark:text-gray-100 text-center text-sm font-medium"
+            style={{ fontFamily: 'System' }}
+            numberOfLines={2}
+          >
+            {name}
+          </Text>
+        </View>
       </View>
     </Pressable>
   );

@@ -1,17 +1,14 @@
 import { applyUpdate, isUpdateAvailable } from '@/lib/utils/updates';
-import Constants from 'expo-constants';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
 import APKList from '../../components/APKList';
 import { CustomAlert } from '../../components/common/CustomAlert';
-import DarkModeToggle from '../../components/DarkModeToggle';
 import { fetchAPKData } from '../../lib/api';
-import { useTheme } from '../../hooks/ThemeContext';
 
 export default function HomeScreen() {
   const [apks, setApks] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showUpdateAlert, setShowUpdateAlert] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<{
     title: string;
@@ -27,14 +24,12 @@ export default function HomeScreen() {
     buttons: [],
   });
 
-  const { isDarkMode } = useTheme();
-
   useEffect(() => {
     loadAPKs();
     checkForUpdates();
   }, []);
 
-  const loadAPKs = async () => {
+  const loadAPKs = async (isRefresh = false) => {
     try {
       const data = await fetchAPKData();
       setApks(data);
@@ -42,7 +37,15 @@ export default function HomeScreen() {
       Alert.alert('Error', '无法加载APK数据');
     } finally {
       setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      }
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadAPKs(true);
   };
 
   async function checkForUpdates() {
@@ -85,36 +88,37 @@ export default function HomeScreen() {
     }
   }
 
-  const filteredApks = apks.filter(apk => apk.name.toLowerCase().includes(search.toLowerCase()));
-
   return (
     <>
-      <View
-        className="flex-1 p-4 bg-gray-50 dark:bg-gray-900"
-        style={{ paddingTop: Platform.OS === 'android' ? Constants.statusBarHeight : 0 }}
-      >
-        <View className="flex-row items-center mb-4">
-          <TextInput
-            className="flex-1 bg-white dark:bg-gray-800 p-3 rounded-lg text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-            placeholder="搜索应用..."
-            placeholderTextColor={isDarkMode ? '#9ca3af' : '#6b7280'}
-            value={search}
-            onChangeText={setSearch}
+      <ScrollView
+        className="flex-1 bg-gray-50 dark:bg-gray-900"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#06b6d4"
+            colors={['#06b6d4']}
           />
-          <DarkModeToggle />
-        </View>
+        }
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
         {loading ? (
           <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color={isDarkMode ? '#3b82f6' : '#0000ff'} />
+            <ActivityIndicator size="large" color="#9ca3af" />
           </View>
         ) : apks.length === 0 ? (
           <View className="flex-1 justify-center items-center">
-            <Text className="text-gray-500 dark:text-gray-400">暂无APK数据</Text>
+            <Text
+              className="text-base text-gray-600 dark:text-gray-300"
+              style={{ fontFamily: 'System' }}
+            >
+              暂无APK数据
+            </Text>
           </View>
         ) : (
-          <APKList apks={filteredApks} />
+          <APKList apks={apks} />
         )}
-      </View>
+      </ScrollView>
 
       <CustomAlert
         visible={showUpdateAlert}

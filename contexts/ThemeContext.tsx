@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { useDarkMode } from './useDarkMode';
+import { useColorTheme } from '../hooks/useColorTheme';
 
 type ThemeContextType = {
   isDarkMode: boolean;
@@ -9,7 +9,7 @@ type ThemeContextType = {
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isDarkMode, toggleDarkMode } = useColorTheme();
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>{children}</ThemeContext.Provider>

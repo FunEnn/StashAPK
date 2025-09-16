@@ -15,21 +15,6 @@ type CustomAlertProps = {
   onDismiss: () => void;
 };
 
-function getButtonClasses(style?: AlertButton['style']): { container: string; text: string } {
-  switch (style) {
-    case 'cancel':
-      return {
-        container: 'bg-gray-200 dark:bg-gray-700',
-        text: 'text-gray-900 dark:text-gray-100',
-      };
-    case 'destructive':
-      return { container: 'bg-red-600', text: 'text-white' };
-    case 'default':
-    default:
-      return { container: 'bg-blue-600', text: 'text-white' };
-  }
-}
-
 export const CustomAlert: React.FC<CustomAlertProps> = ({
   visible,
   title,
@@ -40,9 +25,9 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View className="flex-1 items-center justify-center">
-        <Pressable className="absolute inset-0 bg-black/50" onPress={onDismiss} />
+        <Pressable className="absolute inset-0 bg-black/50 dark:bg-black/60" onPress={onDismiss} />
 
-        <View className="w-11/12 max-w-md rounded-2xl bg-white p-5 dark:bg-gray-800">
+        <View className="w-11/12 max-w-sm rounded-2xl bg-white p-5 dark:bg-gray-900">
           {title ? (
             <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
               {title}
@@ -54,14 +39,38 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
 
           <View className="mt-5 flex-row flex-wrap items-center justify-end gap-3">
             {buttons?.map((button, index) => {
-              const classes = getButtonClasses(button.style);
+              const getButtonClasses = () => {
+                const baseClasses = 'rounded-md px-4 py-2';
+                switch (button.style) {
+                  case 'cancel':
+                    return `${baseClasses} bg-gray-200 dark:bg-gray-700`;
+                  case 'destructive':
+                    return `${baseClasses} bg-red-600 dark:bg-red-700`;
+                  case 'default':
+                  default:
+                    return `${baseClasses} bg-blue-600 dark:bg-blue-700`;
+                }
+              };
+
+              const getTextClasses = () => {
+                switch (button.style) {
+                  case 'cancel':
+                    return 'text-sm font-medium text-gray-900 dark:text-gray-100';
+                  case 'destructive':
+                    return 'text-sm font-medium text-white';
+                  case 'default':
+                  default:
+                    return 'text-sm font-medium text-white';
+                }
+              };
+
               return (
                 <Pressable
                   key={`${button.text}-${index}`}
                   onPress={button.onPress}
-                  className={`rounded-md px-4 py-2 ${classes.container}`}
+                  className={getButtonClasses()}
                 >
-                  <Text className={`text-sm font-medium ${classes.text}`}>{button.text}</Text>
+                  <Text className={getTextClasses()}>{button.text}</Text>
                 </Pressable>
               );
             })}

@@ -1,16 +1,13 @@
 import { useState } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image } from 'react-native';
 
 interface ImageWithFallbackProps {
   source: string;
-  className?: string;
+  style?: object;
   contentFit?: 'cover' | 'contain' | 'fill' | 'scale-down' | 'none';
 }
 
-export default function ImageWithFallback({
-  source,
-  className = 'w-16 h-16',
-}: ImageWithFallbackProps) {
+export default function ImageWithFallback({ source, style = {} }: ImageWithFallbackProps) {
   const [hasError, setHasError] = useState(false);
   const defaultIcon = 'https://s2.loli.net/2025/09/05/sHNmMYuk4yB3jr9.jpg';
 
@@ -24,15 +21,10 @@ export default function ImageWithFallback({
 
   // 如果图片加载失败，显示默认图标
   if (hasError) {
-    return <Image source={{ uri: defaultIcon }} className={className} fadeDuration={200} />;
+    return <Image source={{ uri: defaultIcon }} style={style} fadeDuration={200} />;
   }
 
   return (
-    <Image
-      source={{ uri: imageSource }}
-      className={className}
-      onError={handleError}
-      fadeDuration={200}
-    />
+    <Image source={{ uri: imageSource }} style={style} onError={handleError} fadeDuration={200} />
   );
 }
