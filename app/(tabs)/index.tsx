@@ -96,24 +96,26 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#06b6d4"
-            colors={['#06b6d4']}
+            tintColor="#3b82f6"
+            colors={['#3b82f6']}
           />
         }
         contentContainerStyle={{ flexGrow: 1 }}
       >
         {loading ? (
           <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#9ca3af" />
+            <ActivityIndicator size="large" color="#3b82f6" />
           </View>
         ) : apks.length === 0 ? (
-          <View className="flex-1 justify-center items-center">
-            <Text
-              className="text-base text-gray-600 dark:text-gray-300"
-              style={{ fontFamily: 'System' }}
-            >
-              暂无APK数据
-            </Text>
+          <View className="flex-1 justify-center items-center px-8">
+            <View className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg">
+              <Text
+                className="text-base text-gray-600 dark:text-gray-300 font-medium text-center"
+                style={{ fontFamily: 'System' }}
+              >
+                暂无APK数据
+              </Text>
+            </View>
           </View>
         ) : (
           <APKList apks={apks} />

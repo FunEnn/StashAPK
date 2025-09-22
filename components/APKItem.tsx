@@ -26,11 +26,11 @@ export default function APKItem({ name, icon, downloadUrl }: APKItemProps) {
   return (
     <Pressable
       onPress={handleDownload}
-      android_ripple={{ color: isDarkMode ? '#1f2937' : '#e5e7eb' }}
-      className="rounded-2xl overflow-hidden"
+      android_ripple={{ color: isDarkMode ? '#374151' : '#e5e7eb' }}
+      className="rounded-2xl overflow-hidden active:scale-95 transition-transform"
     >
-      <View className="bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-2xl border">
-        <View className="h-28 overflow-hidden rounded-t-2xl">
+      <View className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg">
+        <View className="h-32 overflow-hidden rounded-t-2xl">
           <ImageWithFallback
             source={icon || defaultIcon}
             style={{ width: '100%', height: '100%' }}
@@ -39,9 +39,9 @@ export default function APKItem({ name, icon, downloadUrl }: APKItemProps) {
         </View>
 
         {/* 名称 */}
-        <View className="p-3">
+        <View className="p-4">
           <Text
-            className="text-gray-800 dark:text-gray-100 text-center text-sm font-medium"
+            className="text-gray-800 dark:text-gray-100 text-center text-sm font-semibold leading-tight"
             style={{ fontFamily: 'System' }}
             numberOfLines={2}
           >

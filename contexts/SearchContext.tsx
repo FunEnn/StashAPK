@@ -1,5 +1,5 @@
 import { fetchAPKData } from '@/lib/api';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 type APKData = {
   name: string;
@@ -31,6 +31,11 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<APKData[]>([]);
   const [allApks, setAllApks] = useState<APKData[]>([]);
+
+  // 初始化时加载所有APK数据
+  useEffect(() => {
+    loadAllApks();
+  }, []);
 
   // 加载所有 APK 数据
   const loadAllApks = async () => {

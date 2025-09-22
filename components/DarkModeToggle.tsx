@@ -7,11 +7,14 @@ export default function DarkModeToggle() {
   const { isDarkMode, toggleDarkMode } = useColorTheme();
 
   const iconName = isDarkMode ? 'sunny' : 'moon';
-  const iconColor = isDarkMode ? '#fde047' : '#111827';
+  const iconColor = isDarkMode ? '#fbbf24' : '#374151';
 
   return (
-    <TouchableOpacity className={'ml-2 p-2'} onPress={toggleDarkMode}>
-      <Ionicons name={iconName} size={22} color={iconColor} />
+    <TouchableOpacity
+      className="ml-3 p-3 rounded-xl active:bg-gray-200 dark:active:bg-gray-700 active:scale-95 transition-transform"
+      onPress={toggleDarkMode}
+    >
+      <Ionicons name={iconName} size={24} color={iconColor} />
     </TouchableOpacity>
   );
 }

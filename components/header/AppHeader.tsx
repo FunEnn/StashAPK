@@ -1,8 +1,13 @@
 import { useSearchContext } from '@/contexts/SearchContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import DarkModeToggle from '../DarkModeToggle';
 import SearchBar from '../search/SearchBar';
 
@@ -14,34 +19,42 @@ type AppHeaderProps = {
 
 export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProps) {
   const { setSearch, performSearch } = useSearchContext();
-  const router = useRouter();
   const [showSearch, setShowSearch] = useState(false);
   const [value, setValue] = useState('');
   const [showDrawer, setShowDrawer] = useState(false);
-  const toggleAnim = useRef(new Animated.Value(0)).current;
-  const drawerAnim = useRef(new Animated.Value(0)).current;
-  const searchAnim = useRef(new Animated.Value(0)).current;
+  const toggleAnim = useSharedValue(0);
+  const drawerAnim = useSharedValue(0);
+  const searchAnim = useSharedValue(0);
 
   useEffect(() => {
-    Animated.timing(toggleAnim, {
-      toValue: showDrawer ? 1 : 0,
-      duration: 180,
-      useNativeDriver: true,
-    }).start();
-    Animated.timing(drawerAnim, {
-      toValue: showDrawer ? 1 : 0,
-      duration: 220,
-      useNativeDriver: true,
-    }).start();
+    toggleAnim.value = withTiming(showDrawer ? 1 : 0, { duration: 180 });
+    drawerAnim.value = withTiming(showDrawer ? 1 : 0, { duration: 220 });
   }, [showDrawer, toggleAnim, drawerAnim]);
 
   useEffect(() => {
-    Animated.timing(searchAnim, {
-      toValue: showSearch ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
+    searchAnim.value = withTiming(showSearch ? 1 : 0, { duration: 200 });
   }, [showSearch, searchAnim]);
+
+  // 动画样式
+  const menuIconStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(toggleAnim.value, [0, 1], [1, 0]),
+    transform: [{ rotate: `${interpolate(toggleAnim.value, [0, 1], [0, 90])}deg` }],
+  }));
+
+  const closeIconStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(toggleAnim.value, [0, 1], [0, 1]),
+    transform: [{ rotate: `${interpolate(toggleAnim.value, [0, 1], [-90, 0])}deg` }],
+  }));
+
+  const searchPanelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(searchAnim.value, [0, 1], [0, 1]),
+    transform: [{ translateY: interpolate(searchAnim.value, [0, 1], [-12, 0]) }],
+  }));
+
+  const drawerPanelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(drawerAnim.value, [0, 1], [0, 1]),
+    transform: [{ translateY: interpolate(drawerAnim.value, [0, 1], [-8, 0]) }],
+  }));
 
   const handleChange = (text: string) => {
     setValue(text);
@@ -54,7 +67,6 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
 
     try {
       await performSearch(value);
-      router.push(`/search?q=${encodeURIComponent(value)}`);
       setShowSearch(false);
     } catch (error) {
       console.error('搜索失败:', error);
@@ -62,12 +74,12 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
   };
   return (
     <View
-      className="mb-4 bg-cyan-500 dark:bg-cyan-700 shadow-lg shadow-cyan-600/30 dark:shadow-cyan-900/40 border-b border-cyan-400/40 dark:border-cyan-300/30 relative z-50 h-14"
+      className="bg-blue-600 dark:bg-gray-800 shadow-lg border-b border-blue-500/30 dark:border-gray-700/30 relative z-50 h-16"
       style={{ elevation: 50 }}
     >
       <View className="flex-row items-center px-3 h-full">
         <Pressable
-          className="p-2 active:opacity-80"
+          className="p-3 rounded-xl active:opacity-80 active:bg-white/10"
           disabled={showSearch}
           onPress={() => {
             if (showSearch) return;
@@ -77,34 +89,22 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
         >
           <View className="w-6 h-6">
             <Animated.View
-              style={{
-                position: 'absolute',
-                opacity: toggleAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-                transform: [
-                  {
-                    rotate: toggleAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '90deg'],
-                    }),
-                  },
-                ],
-              }}
+              style={[
+                {
+                  position: 'absolute',
+                },
+                menuIconStyle,
+              ]}
             >
               <Ionicons name="menu" size={22} color="#ffffff" />
             </Animated.View>
             <Animated.View
-              style={{
-                position: 'absolute',
-                opacity: toggleAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
-                transform: [
-                  {
-                    rotate: toggleAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['-90deg', '0deg'],
-                    }),
-                  },
-                ],
-              }}
+              style={[
+                {
+                  position: 'absolute',
+                },
+                closeIconStyle,
+              ]}
             >
               <Ionicons name="close" size={22} color="#ffffff" />
             </Animated.View>
@@ -112,14 +112,17 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
         </Pressable>
 
         <View className="flex-1 items-center">
-          <Pressable onPress={onHomePress} className="p-1 active:opacity-80">
-            <Ionicons name="home" size={22} color="#ffffff" />
+          <Pressable
+            onPress={onHomePress}
+            className="p-3 rounded-xl active:opacity-80 active:bg-white/10"
+          >
+            <Ionicons name="home" size={24} color="#ffffff" />
           </Pressable>
         </View>
 
         <View className="flex-row items-center gap-1">
           <Pressable
-            className="p-2 active:opacity-80"
+            className="p-3 rounded-xl active:opacity-80 active:bg-white/10"
             disabled={showDrawer}
             onPress={() => {
               if (showDrawer) return;
@@ -135,15 +138,14 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
         <Animated.View
           pointerEvents={'auto'}
           className="absolute left-0 right-0 top-full z-[200] shadow-lg overflow-hidden"
-          style={{
-            elevation: 200,
-            opacity: searchAnim,
-            transform: [
-              { translateY: searchAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) },
-            ],
-          }}
+          style={[
+            {
+              elevation: 200,
+            },
+            searchPanelStyle,
+          ]}
         >
-          <View className="bg-gray-50 dark:bg-gray-900 border-t border-cyan-400/30 dark:border-cyan-300/20">
+          <View className="bg-white dark:bg-gray-800 border-t border-blue-400/30 dark:border-gray-600/30">
             <SearchBar
               value={value}
               onChangeText={handleChange}
@@ -160,27 +162,26 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
         <Animated.View
           pointerEvents={'auto'}
           className="absolute left-0 top-full z-[200] overflow-hidden"
-          style={{
-            elevation: 200,
-            opacity: drawerAnim,
-            transform: [
-              { translateY: drawerAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) },
-            ],
-          }}
+          style={[
+            {
+              elevation: 200,
+            },
+            drawerPanelStyle,
+          ]}
         >
-          <View className="w-72 bg-white dark:bg-gray-900 rounded-b-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
+          <View className="w-72 bg-white dark:bg-gray-800 rounded-b-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
             {/* Header */}
-            <View className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-              <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">设置</Text>
+            <View className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+              <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">设置</Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">应用配置与偏好</Text>
             </View>
 
             {/* Content */}
             <View className="px-6 py-4">
               {/* Dark Mode Toggle */}
-              <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center justify-between mb-6">
                 <View>
-                  <Text className="text-base font-medium text-gray-900 dark:text-gray-100">
+                  <Text className="text-base font-semibold text-gray-900 dark:text-gray-100">
                     深色模式
                   </Text>
                   <Text className="text-sm text-gray-500 dark:text-gray-400">切换应用主题</Text>
@@ -188,19 +189,19 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
                 <DarkModeToggle />
               </View>
 
-              <View className="h-px bg-gray-100 dark:bg-gray-800 mb-4" />
+              <View className="h-px bg-gray-200 dark:bg-gray-700 mb-6" />
 
               {/* Close Menu */}
               <Pressable
-                className="flex-row items-center justify-between py-3"
+                className="flex-row items-center justify-between py-4 px-3 rounded-xl active:bg-blue-50 dark:active:bg-gray-700"
                 onPress={() => setShowDrawer(false)}
               >
                 <View className="flex-row items-center">
-                  <Text className="text-base font-medium text-gray-900 dark:text-gray-100">
+                  <Text className="text-base font-semibold text-gray-900 dark:text-gray-100">
                     关闭菜单
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                <Ionicons name="chevron-forward" size={18} color="#3b82f6" />
               </Pressable>
             </View>
           </View>
