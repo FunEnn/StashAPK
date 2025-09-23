@@ -27,8 +27,8 @@ jobs:
       - name: Sync APK Data
         run: |
           # 配置Git
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
+          git config --global user.name "FunEnn"
+          git config --global user.email "3095852337@qq.com"
           
           # 获取Gitee Release assets
           ASSETS_DATA=$(curl -s -H "Authorization: token $GITEE_TOKEN" \
@@ -56,11 +56,11 @@ jobs:
           mkdir -p apk-data
           echo "$APK_DATA" > apk-data/apkData.json
           
-          # 切换到apk-data-only分支并推送
-          git checkout -B apk-data-only || git checkout apk-data-only
-          git pull origin apk-data-only || true
+          # 切换到master分支并推送
+          git checkout master
+          git pull origin master || true
           git add apk-data/apkData.json
-          git commit -m "Update APK data from Gitee Release v0.0.1 - $(date)" || true
-          git push origin apk-data-only || git push --force origin apk-data-only
+          git commit -m "Update APK data - $(date)" || true
+          git push origin master
           
           echo "✅ APK data synced successfully"

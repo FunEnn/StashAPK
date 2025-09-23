@@ -5,9 +5,8 @@ on:
     branches:
       - main
       - master
-      - apk-data-only
     paths:
-      - 'apkData.json'
+      - 'apk-data/apkData.json'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
@@ -18,7 +17,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
