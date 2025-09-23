@@ -9,6 +9,100 @@ export interface UploadResult {
   error?: string;
 }
 
+export interface ReleaseAsset {
+  browser_download_url: string;
+  name: string;
+  size?: number;
+  content_type?: string;
+}
+
+export interface ReleaseInfo {
+  id: number;
+  tag_name: string;
+  name: string;
+  assets: ReleaseAsset[];
+}
+
+// 获取Release的详细信息
+export const getReleaseInfo = async (releaseId: number): Promise<ReleaseInfo | null> => {
+  try {
+    if (!GITEE_TOKEN || !GITEE_OWNER || !GITEE_REPO) {
+      throw new Error('Gitee configuration not complete');
+    }
+
+    const response = await fetch(
+      `https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${releaseId}`,
+      {
+        headers: {
+          Authorization: `token ${GITEE_TOKEN}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get release: ${response.statusText}`);
+    }
+
+    const release: ReleaseInfo = await response.json();
+    console.log('Release info:', release);
+
+    return release;
+  } catch (error) {
+    console.error('Error getting release info:', error);
+    return null;
+  }
+};
+
+// 获取Release的assets信息
+export const getReleaseAssets = async (releaseId?: number): Promise<ReleaseAsset[]> => {
+  try {
+    if (!GITEE_TOKEN || !GITEE_OWNER || !GITEE_REPO) {
+      throw new Error('Gitee configuration not complete');
+    }
+
+    // 如果没有提供releaseId，先获取v0.0.1的release信息
+    let targetReleaseId = releaseId;
+    if (!targetReleaseId) {
+      const tagResponse = await fetch(
+        `https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/tags/v0.0.1`,
+        {
+          headers: {
+            Authorization: `token ${GITEE_TOKEN}`,
+          },
+        }
+      );
+
+      if (tagResponse.ok) {
+        const releaseInfo = await tagResponse.json();
+        targetReleaseId = releaseInfo.id;
+      } else {
+        throw new Error('v0.0.1 release not found');
+      }
+    }
+
+    const response = await fetch(
+      `https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${targetReleaseId}`,
+      {
+        headers: {
+          Authorization: `token ${GITEE_TOKEN}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get release: ${response.statusText}`);
+    }
+
+    const release: ReleaseInfo = await response.json();
+    console.log('Release assets:', release.assets);
+
+    return release.assets || [];
+  } catch (error) {
+    console.error('Error getting release assets:', error);
+    return [];
+  }
+};
+
 export const uploadToGitee = async (file: any, fileName: string): Promise<UploadResult> => {
   try {
     if (!GITEE_TOKEN || !GITEE_OWNER || !GITEE_REPO) {
@@ -60,11 +154,27 @@ export const uploadToGitee = async (file: any, fileName: string): Promise<Upload
     }
 
     // 上传文件到release
+    console.log('Preparing to upload file:', {
+      fileName,
+      fileUri: file.uri,
+      fileSize: file.size,
+      mimeType: file.mimeType,
+      releaseId: release.id,
+      uploadUrl: `https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${release.id}/attach_files`,
+    });
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', {
+      uri: file.uri,
+      type: file.mimeType || 'application/vnd.android.package-archive',
+      name: fileName,
+    } as any);
+
+    // 根据Gitee API文档，可能需要添加access_token参数
+    formData.append('access_token', GITEE_TOKEN);
 
     const uploadResponse = await fetch(
-      `https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${release.id}/attachments`,
+      `https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${release.id}/attach_files`,
       {
         method: 'POST',
         headers: {
@@ -75,10 +185,19 @@ export const uploadToGitee = async (file: any, fileName: string): Promise<Upload
     );
 
     if (!uploadResponse.ok) {
-      throw new Error(`Failed to upload file: ${uploadResponse.statusText}`);
+      const errorText = await uploadResponse.text();
+      console.error('Upload failed:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        error: errorText,
+      });
+      throw new Error(
+        `Failed to upload file: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`
+      );
     }
 
     const uploadResult = await uploadResponse.json();
+    console.log('Upload successful:', uploadResult);
 
     return {
       success: true,
@@ -95,79 +214,3 @@ export const uploadToGitee = async (file: any, fileName: string): Promise<Upload
 
 // 重新导出APK解析功能
 export { convertToAPKDataFormat, parseAPKFile } from './apkParser';
-
-export const updateAPKData = async (apkInfo: {
-  name: string;
-  icon: string;
-  category: string;
-  downloadUrl: string;
-}): Promise<boolean> => {
-  try {
-    if (!GITEE_TOKEN || !GITEE_OWNER || !GITEE_REPO) {
-      throw new Error(
-        'Gitee configuration not complete. Please check GITEE_TOKEN, GITEE_OWNER, and GITEE_REPO environment variables'
-      );
-    }
-
-    // 获取当前apkData.json文件内容
-    const getFileResponse = await fetch(
-      `https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/contents/apkData.json?ref=apk-data-only`,
-      {
-        headers: {
-          Authorization: `token ${GITEE_TOKEN}`,
-        },
-      }
-    );
-
-    if (!getFileResponse.ok) {
-      throw new Error(`Failed to get file: ${getFileResponse.statusText}`);
-    }
-
-    const fileData = await getFileResponse.json();
-    const currentContent = JSON.parse(atob(fileData.content));
-
-    // 添加新的APK信息
-    const newAPK = {
-      name: apkInfo.name,
-      icon: apkInfo.icon || 'https://s2.loli.net/2025/09/05/sHNmMYuk4yB3jr9.jpg',
-      category: apkInfo.category || 'Entertainment',
-      downloadUrl: apkInfo.downloadUrl,
-    };
-
-    // 检查是否已存在同名APK，如果存在则更新，否则添加
-    const existingIndex = currentContent.findIndex((apk: any) => apk.name === newAPK.name);
-    if (existingIndex >= 0) {
-      currentContent[existingIndex] = newAPK;
-    } else {
-      currentContent.push(newAPK);
-    }
-
-    // 更新文件
-    const updateResponse = await fetch(
-      `https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/contents/apkData.json`,
-      {
-        method: 'PUT',
-        headers: {
-          Authorization: `token ${GITEE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: `Update APK data: Add ${apkInfo.name}`,
-          content: btoa(JSON.stringify(currentContent, null, 2)),
-          sha: fileData.sha,
-          branch: 'apk-data-only',
-        }),
-      }
-    );
-
-    if (!updateResponse.ok) {
-      throw new Error(`Failed to update file: ${updateResponse.statusText}`);
-    }
-
-    console.log('APK data updated successfully:', apkInfo);
-    return true;
-  } catch (error) {
-    console.error('Failed to update APK data:', error);
-    return false;
-  }
-};

@@ -1,18 +1,54 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import APKInfoCard from '../../components/upload/APKInfoCard';
 import FileUpload from '../../components/upload/FileUpload';
 import {
-  convertToAPKDataFormat,
+  getReleaseAssets,
+  getReleaseInfo,
   parseAPKFile,
-  updateAPKData,
+  ReleaseAsset,
+  ReleaseInfo,
   uploadToGitee,
 } from '../../lib/upload';
 
 export default function UploadScreen() {
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [parsedAPKInfo, setParsedAPKInfo] = useState<any>(null);
+  const [releaseAssets, setReleaseAssets] = useState<ReleaseAsset[]>([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+  const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
+  const [releaseIdInput, setReleaseIdInput] = useState<string>('');
+
+  // 获取Release assets
+  const loadReleaseAssets = async (releaseId?: number) => {
+    try {
+      setLoadingAssets(true);
+      const assets = await getReleaseAssets(releaseId);
+      setReleaseAssets(assets);
+
+      // 如果提供了releaseId，也获取Release的详细信息
+      if (releaseId) {
+        const info = await getReleaseInfo(releaseId);
+        setReleaseInfo(info);
+      }
+    } catch (error) {
+      console.error('Failed to load release assets:', error);
+      Alert.alert('错误', '获取Release文件列表失败');
+    } finally {
+      setLoadingAssets(false);
+    }
+  };
+
+  // 通过Release ID获取assets
+  const loadReleaseById = async () => {
+    const id = parseInt(releaseIdInput);
+    if (isNaN(id)) {
+      Alert.alert('错误', '请输入有效的Release ID');
+      return;
+    }
+    await loadReleaseAssets(id);
+  };
 
   const handleFileSelect = async (file: any) => {
     const newFile = {
@@ -65,20 +101,13 @@ export default function UploadScreen() {
         // 3. 设置下载链接
         apkInfo.downloadUrl = uploadResult.downloadUrl;
 
-        Alert.alert('更新数据', '正在更新apk-data-only分支...');
+        Alert.alert(
+          '上传成功',
+          `✅ 文件已上传到Gitee v0.0.1\n📱 应用名称: ${apkInfo.name}\n🔗 下载链接: ${uploadResult.downloadUrl}\n📝 APK数据将通过GitHub Actions自动同步到apk-data-only分支`
+        );
 
-        // 4. 转换为apkData.json格式并更新
-        const apkDataFormat = convertToAPKDataFormat(apkInfo);
-        const updateResult = await updateAPKData(apkDataFormat);
-
-        if (updateResult) {
-          Alert.alert(
-            '上传成功',
-            `✅ 文件已上传到Gitee v0.0.1\n📱 应用名称: ${apkInfo.name}\n🔗 下载链接: ${uploadResult.downloadUrl}\n📝 APK数据已更新到apk-data-only分支`
-          );
-        } else {
-          Alert.alert('部分成功', '文件上传成功，但更新APK数据失败');
-        }
+        // 刷新Release assets列表
+        await loadReleaseAssets();
       } else {
         Alert.alert('上传失败', uploadResult.error || '未知错误');
       }
@@ -102,7 +131,9 @@ export default function UploadScreen() {
         {/* 标题 */}
         <View className="mb-8">
           <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">APK 上传</Text>
-          <Text className="text-gray-600 dark:text-gray-400">上传APK文件到Gitee v0.0.1</Text>
+          <Text className="text-gray-600 dark:text-gray-400">
+            上传APK文件到Gitee v0.0.1，数据将自动同步到GitHub
+          </Text>
         </View>
 
         {/* 上传区域 */}
@@ -154,6 +185,99 @@ export default function UploadScreen() {
             ))}
           </View>
         )}
+
+        {/* Release Assets 列表 */}
+        <View className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Release 文件列表
+            </Text>
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => loadReleaseAssets()}
+                disabled={loadingAssets}
+                className="bg-blue-600 px-4 py-2 rounded-lg active:opacity-80 disabled:opacity-50"
+              >
+                <Text className="text-white font-medium">
+                  {loadingAssets ? '加载中...' : 'v0.0.1'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Release ID 输入 */}
+          <View className="mb-4">
+            <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              或通过Release ID获取：
+            </Text>
+            <View className="flex-row gap-2">
+              <TextInput
+                value={releaseIdInput}
+                onChangeText={setReleaseIdInput}
+                placeholder="输入Release ID (如: 526818)"
+                className="flex-1 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg text-gray-900 dark:text-gray-100"
+                keyboardType="numeric"
+              />
+              <Pressable
+                onPress={loadReleaseById}
+                disabled={loadingAssets || !releaseIdInput}
+                className="bg-green-600 px-4 py-2 rounded-lg active:opacity-80 disabled:opacity-50"
+              >
+                <Text className="text-white font-medium">获取</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Release 信息显示 */}
+          {releaseInfo && (
+            <View className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <Text className="text-blue-900 dark:text-blue-100 font-medium">
+                Release: {releaseInfo.name}
+              </Text>
+              <Text className="text-blue-700 dark:text-blue-300 text-sm">
+                Tag: {releaseInfo.tag_name} | ID: {releaseInfo.id}
+              </Text>
+            </View>
+          )}
+
+          {releaseAssets.length > 0 ? (
+            <View className="space-y-3">
+              {releaseAssets.map((asset, index) => (
+                <View
+                  key={index}
+                  className="flex-row items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl"
+                >
+                  <View className="flex-1">
+                    <View className="flex-row items-center mb-1">
+                      <Ionicons name="download" size={20} color="#3b82f6" />
+                      <Text className="text-gray-900 dark:text-gray-100 font-medium ml-2">
+                        {asset.name}
+                      </Text>
+                    </View>
+                    <Text className="text-gray-500 dark:text-gray-400 text-sm">
+                      {asset.size ? formatFileSize(asset.size) : '未知大小'}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => {
+                      Alert.alert('下载链接', asset.browser_download_url);
+                    }}
+                    className="bg-green-600 px-3 py-2 rounded-lg active:opacity-80"
+                  >
+                    <Text className="text-white font-medium text-sm">查看</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View className="items-center py-8">
+              <Ionicons name="cloud-download" size={48} color="#9ca3af" />
+              <Text className="text-gray-500 dark:text-gray-400 mt-3 text-center">
+                暂无Release文件{'\n'}点击刷新按钮获取最新文件列表
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* 说明信息 */}
         <View className="mt-8 bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-6">

@@ -7,12 +7,14 @@ interface FileUploadProps {
   onFileSelect: (file: any) => void;
   acceptedTypes?: string[];
   maxSize?: number; // MB
+  disabled?: boolean;
 }
 
 export default function FileUpload({
   onFileSelect,
   acceptedTypes = ['.apk'],
   maxSize = 50,
+  disabled = false,
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
 
