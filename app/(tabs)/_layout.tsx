@@ -10,7 +10,7 @@ export default function TabLayout() {
   const paddingTop = Platform.OS === 'android' ? Constants.statusBarHeight : 0;
   return (
     <SearchProvider>
-      <View style={{ paddingTop }} className="flex-1 bg-blue-600 dark:bg-gray-900">
+      <View style={{ paddingTop }} className="flex-1 bg-blue-600 dark:bg-gray-800">
         <AppHeader onHomePress={() => router.push('/')} />
         <Tabs
           screenOptions={{

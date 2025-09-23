@@ -3,7 +3,6 @@ name: Sync APK Data to GitHub
 on:
   workflow_dispatch:
   schedule:
-    # 每5分钟检查一次Gitee Release更新
     - cron: '*/5 * * * *'
 
 env:
@@ -17,76 +16,29 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: read
     
     steps:
-      - name: Check secrets
-        run: |
-          if [ -z "$GITEE_TOKEN" ] || [ -z "$GITEE_OWNER" ] || [ -z "$GITEE_REPO" ] || [ -z "$GITHUB_TOKEN" ]; then
-            echo "❌ Missing required secrets: GITEE_TOKEN, GITEE_OWNER, GITEE_REPO, GITHUB_TOKEN"
-            exit 1
-          fi
-          echo "✅ All required secrets are configured"
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - name: Setup Git
+      - name: Sync APK Data
         run: |
-          echo "🔧 Setting up Git configuration..."
-          
           # 配置Git
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           
-          echo "✅ Git configuration completed"
-
-      - name: Ensure Gitee Release
-        run: |
-          echo "🔍 Ensuring v0.0.1 Release exists..."
-          
-          # 检查v0.0.1 release是否存在
-          RELEASE_EXISTS=$(curl -s -H "Authorization: token $GITEE_TOKEN" \
-            "https://gitee.com/api/v5/repos/$GITEE_OWNER/$GITEE_REPO/releases/tags/v0.0.1" | jq -r '.id // empty')
-          
-          if [ -z "$RELEASE_EXISTS" ]; then
-            echo "📦 Creating v0.0.1 Release..."
-            curl -s -X POST \
-              -H "Authorization: token $GITEE_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d '{
-                "tag_name": "v0.0.1",
-                "name": "APK Collection v0.0.1",
-                "body": "APK Collection Release v0.0.1\nCreated by GitHub Actions",
-                "prerelease": false
-              }' \
-              "https://gitee.com/api/v5/repos/$GITEE_OWNER/$GITEE_REPO/releases"
-            echo "✅ v0.0.1 Release created"
-          else
-            echo "✅ v0.0.1 Release already exists"
-          fi
-
-      - name: Sync APK Data to GitHub apk-data-only Branch
-        run: |
-          echo "📝 Syncing APK data from Gitee to GitHub apk-data-only branch..."
-          
-          # 获取Gitee Release的assets信息
-          RELEASE_DATA=$(curl -s -H "Authorization: token $GITEE_TOKEN" \
+          # 获取Gitee Release assets
+          ASSETS_DATA=$(curl -s -H "Authorization: token $GITEE_TOKEN" \
             "https://gitee.com/api/v5/repos/$GITEE_OWNER/$GITEE_REPO/releases/tags/v0.0.1")
           
-          RELEASE_ID=$(echo "$RELEASE_DATA" | jq -r '.id')
-          echo "📋 Found Release ID: $RELEASE_ID"
-          
-          # 获取Release的详细信息和assets
-          ASSETS_DATA=$(curl -s -H "Authorization: token $GITEE_TOKEN" \
-            "https://gitee.com/api/v5/repos/$GITEE_OWNER/$GITEE_REPO/releases/$RELEASE_ID")
-          
-          # 提取assets信息并生成APK数据
+          # 生成APK数据（只保留APK文件）
           APK_DATA=$(echo "$ASSETS_DATA" | jq -r '
-            .assets | map({
+            .assets | 
+            map(select(.name | test("\\.apk$"; "i"))) |
+            map({
               name: .name | split(".")[0],
               icon: "https://s2.loli.net/2025/09/05/sHNmMYuk4yB3jr9.jpg",
               category: (if (.name | test("game|Game")) then "Games"
@@ -100,37 +52,15 @@ jobs:
             })
           ')
           
-          echo "📊 Generated APK data:"
-          echo "$APK_DATA" | jq .
-          
-          # 创建apk-data目录（如果不存在）
+          # 创建目录和文件
           mkdir -p apk-data
-          
-          # 创建或更新apkData.json文件
           echo "$APK_DATA" > apk-data/apkData.json
           
-          # 确保apk-data-only分支存在
+          # 切换到apk-data-only分支并推送
           git checkout -B apk-data-only || git checkout apk-data-only
-          
-          # 添加并提交更改
+          git pull origin apk-data-only || true
           git add apk-data/apkData.json
-          git commit -m "Update APK data from Gitee Release v0.0.1 - $(date)" || echo "No changes to commit"
+          git commit -m "Update APK data from Gitee Release v0.0.1 - $(date)" || true
+          git push origin apk-data-only || git push --force origin apk-data-only
           
-          # 推送到GitHub的apk-data-only分支
-          git push origin apk-data-only || {
-            echo "⚠️ Push failed, trying alternative method..."
-            git push https://$GITHUB_TOKEN@github.com/${{ github.repository }}.git apk-data-only
-          }
-          
-          echo "✅ APK data synced to GitHub apk-data-only branch"
-
-      - name: Summary
-        run: |
-          echo "🎉 Sync completed successfully!"
-          echo "📊 Summary:"
-          echo "  - Gitee Repository: $GITEE_OWNER/$GITEE_REPO"
-          echo "  - Gitee Release: v0.0.1 (source)"
-          echo "  - GitHub Branch: apk-data-only (target - updated)"
-          echo "  - APK Data: Synced from Gitee Release assets to GitHub"
-          echo "  - Repository: ${{ github.repository }}"
-          echo "  - Time: $(date)"
+          echo "✅ APK data synced successfully"
