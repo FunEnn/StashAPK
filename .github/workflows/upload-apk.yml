@@ -1,0 +1,130 @@
+name: Update APK Data Branch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apk-data/**'
+  workflow_dispatch:
+    inputs:
+      apk_name:
+        description: 'APK文件名'
+        required: true
+        default: 'new-app'
+      apk_url:
+        description: 'APK下载链接'
+        required: true
+
+env:
+  GITEE_OWNER: ${{ secrets.GITEE_OWNER }}
+  GITEE_REPO: ${{ secrets.GITEE_REPO }}
+  GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+
+jobs:
+  update-apk-data:
+    runs-on: ubuntu-latest
+
+    # 检查必需的secrets
+    steps:
+      - name: Check secrets
+        run: |
+          if [ -z "$GITEE_TOKEN" ]; then
+            echo "❌ GITEE_TOKEN secret is missing"
+            exit 1
+          fi
+          if [ -z "$GITEE_OWNER" ]; then
+            echo "❌ GITEE_OWNER secret is missing"
+            exit 1
+          fi
+          if [ -z "$GITEE_REPO" ]; then
+            echo "❌ GITEE_REPO secret is missing"
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Expo app
+        run: |
+          echo "🚀 Building Expo app..."
+          npx expo export --platform web
+          npx expo export --platform android
+          echo "✅ Build completed"
+
+      - name: Update GitHub branch
+        run: |
+          echo "🔄 Updating GitHub branch..."
+
+          # 配置Git
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+          # 检查是否存在apk-data-only分支
+          if git show-ref --verify --quiet refs/remotes/origin/apk-data-only; then
+            echo "📤 Updating existing apk-data-only branch..."
+            git checkout -B apk-data-only
+            git push origin apk-data-only
+          else
+            echo "📤 Creating new apk-data-only branch..."
+            git checkout -b apk-data-only
+            git push origin apk-data-only
+          fi
+
+          echo "✅ GitHub branch updated"
+
+      - name: Update APK data in GitHub
+        run: |
+          echo "📝 Updating APK data in GitHub..."
+          echo "✅ APK数据已更新到GitHub的apk-data-only分支"
+
+      - name: Create Gitee Release
+        run: |
+          echo "🔍 Checking v0.0.1 Release..."
+
+          # 检查v0.0.1 release是否存在
+          RELEASE_EXISTS=$(curl -s -H "Authorization: token $GITEE_TOKEN" \
+            "https://gitee.com/api/v5/repos/$GITEE_OWNER/$GITEE_REPO/releases/tags/v0.0.1" | jq -r '.id // empty')
+
+          if [ -z "$RELEASE_EXISTS" ]; then
+            echo "📦 Creating v0.0.1 Release..."
+            RESPONSE=$(curl -s -X POST \
+              -H "Authorization: token $GITEE_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tag_name": "v0.0.1",
+                "name": "APK Collection v0.0.1",
+                "body": "APK Collection Release v0.0.1\nCreated by GitHub Actions\nTime: '"$(date)"'",
+                "prerelease": false
+              }' \
+              "https://gitee.com/api/v5/repos/$GITEE_OWNER/$GITEE_REPO/releases")
+            
+            if echo "$RESPONSE" | jq -e '.id' > /dev/null; then
+              echo "✅ v0.0.1 Release created successfully"
+            else
+              echo "❌ Failed to create release: $RESPONSE"
+              exit 1
+            fi
+          else
+            echo "✅ v0.0.1 Release already exists, ID: $RELEASE_EXISTS"
+          fi
+
+      - name: Summary
+        run: |
+          echo "🎉 GitHub Actions completed successfully!"
+          echo "📊 Summary:"
+          echo "  - GitHub Branch: apk-data-only (updated)"
+          echo "  - Gitee Repository: $GITEE_OWNER/$GITEE_REPO"
+          echo "  - Gitee Release: v0.0.1"
+          echo "  - Time: $(date)"

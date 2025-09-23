@@ -1,5 +1,6 @@
 import { useSearchContext } from '@/contexts/SearchContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
@@ -19,6 +20,7 @@ type AppHeaderProps = {
 
 export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProps) {
   const { setSearch, performSearch } = useSearchContext();
+  const router = useRouter();
   const [showSearch, setShowSearch] = useState(false);
   const [value, setValue] = useState('');
   const [showDrawer, setShowDrawer] = useState(false);
@@ -120,19 +122,17 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
           </Pressable>
         </View>
 
-        <View className="flex-row items-center gap-1">
-          <Pressable
-            className="p-3 rounded-xl active:opacity-80 active:bg-white/10"
-            disabled={showDrawer}
-            onPress={() => {
-              if (showDrawer) return;
-              setShowSearch(prev => !prev);
-              setShowDrawer(false);
-            }}
-          >
-            <Ionicons name="search" size={22} color="#ffffff" />
-          </Pressable>
-        </View>
+        <Pressable
+          className="p-3 rounded-xl active:opacity-80 active:bg-white/10"
+          disabled={showDrawer}
+          onPress={() => {
+            if (showDrawer) return;
+            setShowSearch(prev => !prev);
+            setShowDrawer(false);
+          }}
+        >
+          <Ionicons name="search" size={22} color="#ffffff" />
+        </Pressable>
       </View>
       {showSearch ? (
         <Animated.View
@@ -188,6 +188,25 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
                 </View>
                 <DarkModeToggle />
               </View>
+
+              <View className="h-px bg-gray-200 dark:bg-gray-700 mb-6" />
+
+              {/* Upload APK */}
+              <Pressable
+                className="flex-row items-center justify-between py-4 px-3 rounded-xl active:bg-blue-50 dark:active:bg-gray-700 mb-4"
+                onPress={() => {
+                  setShowDrawer(false);
+                  router.push('/upload');
+                }}
+              >
+                <View className="flex-row items-center">
+                  <Ionicons name="cloud-upload" size={20} color="#3b82f6" />
+                  <Text className="text-base font-semibold text-gray-900 dark:text-gray-100 ml-3">
+                    上传APK
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#3b82f6" />
+              </Pressable>
 
               <View className="h-px bg-gray-200 dark:bg-gray-700 mb-6" />
 
