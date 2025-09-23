@@ -92,18 +92,22 @@ export default function UploadScreen() {
         return;
       }
 
+      // 使用当前解析的APK信息（可能已被用户修改）
+      const currentApkInfo = parsedAPKInfo || apkInfo;
+
       Alert.alert('上传中', '正在上传文件到Gitee v0.0.1...');
 
-      // 2. 上传文件到Gitee Releases
-      const uploadResult = await uploadToGitee(file, file.name);
+      // 2. 上传文件到Gitee Releases，使用修改后的名称
+      const fileName = `${currentApkInfo.name}.apk`;
+      const uploadResult = await uploadToGitee(file, fileName);
 
       if (uploadResult.success && uploadResult.downloadUrl) {
         // 3. 设置下载链接
-        apkInfo.downloadUrl = uploadResult.downloadUrl;
+        currentApkInfo.downloadUrl = uploadResult.downloadUrl;
 
         Alert.alert(
           '上传成功',
-          `✅ 文件已上传到Gitee v0.0.1\n📱 应用名称: ${apkInfo.name}\n🔗 下载链接: ${uploadResult.downloadUrl}\n📝 APK数据将通过GitHub Actions自动同步到apk-data-only分支`
+          `✅ 文件已上传到Gitee v0.0.1\n📱 应用名称: ${currentApkInfo.name}\n🔗 下载链接: ${uploadResult.downloadUrl}\n📝 `
         );
 
         // 刷新Release assets列表
@@ -167,7 +171,7 @@ export default function UploadScreen() {
                   <View className="flex-row items-center mb-1">
                     <Ionicons name="document" size={20} color="#3b82f6" />
                     <Text className="text-gray-900 dark:text-gray-100 font-medium ml-2">
-                      {file.name}
+                      {parsedAPKInfo?.name || file.name}
                     </Text>
                   </View>
                   <Text className="text-gray-500 dark:text-gray-400 text-sm">
