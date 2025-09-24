@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { CustomAlert } from '../../components/common/CustomAlert';
 import APKInfoCard from '../../components/upload/APKInfoCard';
 import FileUpload from '../../components/upload/FileUpload';
 import {
@@ -18,6 +19,26 @@ export default function UploadScreen() {
   const [releaseAssets, setReleaseAssets] = useState<ReleaseAsset[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as {
+      text: string;
+      onPress: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }[],
+  });
+
+  // 显示 Alert 的辅助函数
+  const showAlert = (
+    title: string,
+    message: string,
+    buttons: { text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }[]
+  ) => {
+    setAlertConfig({ title, message, buttons });
+    setAlertVisible(true);
+  };
 
   // 获取Release assets
   const loadReleaseAssets = async (releaseId?: number) => {
@@ -33,7 +54,9 @@ export default function UploadScreen() {
       }
     } catch (error) {
       console.error('Failed to load release assets:', error);
-      Alert.alert('错误', '获取Release文件列表失败');
+      showAlert('错误', '获取Release文件列表失败', [
+        { text: '确定', onPress: () => setAlertVisible(false) },
+      ]);
     } finally {
       setLoadingAssets(false);
     }
@@ -57,34 +80,39 @@ export default function UploadScreen() {
       setParsedAPKInfo(apkInfo);
     }
 
-    Alert.alert(
-      '文件已选择',
-      `文件: ${file.name}\n大小: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
-      [
-        { text: '确定', style: 'default' },
-        {
-          text: '上传到Gitee',
-          onPress: () => uploadToGiteeHandler(newFile),
+    showAlert('文件已选择', `文件: ${file.name}\n大小: ${(file.size / 1024 / 1024).toFixed(2)}MB`, [
+      { text: '确定', onPress: () => setAlertVisible(false) },
+      {
+        text: '上传到Gitee',
+        onPress: () => {
+          setAlertVisible(false);
+          uploadToGiteeHandler(newFile);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const uploadToGiteeHandler = async (file: any) => {
     try {
-      Alert.alert('处理中', '正在解析APK文件...');
+      showAlert('处理中', '正在解析APK文件...', [
+        { text: '确定', onPress: () => setAlertVisible(false) },
+      ]);
 
       // 1. 解析APK文件，转换为JSON格式
       const apkInfo = await parseAPKFile(file);
       if (!apkInfo) {
-        Alert.alert('解析失败', '无法解析APK文件信息');
+        showAlert('解析失败', '无法解析APK文件信息', [
+          { text: '确定', onPress: () => setAlertVisible(false) },
+        ]);
         return;
       }
 
       // 使用当前解析的APK信息（可能已被用户修改）
       const currentApkInfo = parsedAPKInfo || apkInfo;
 
-      Alert.alert('上传中', '正在上传文件到Gitee v0.0.1...');
+      showAlert('上传中', '正在上传文件到Gitee v0.0.1...', [
+        { text: '确定', onPress: () => setAlertVisible(false) },
+      ]);
 
       // 2. 上传文件到Gitee Releases，使用修改后的名称
       const fileName = `${currentApkInfo.name}.apk`;
@@ -94,19 +122,24 @@ export default function UploadScreen() {
         // 3. 设置下载链接
         currentApkInfo.downloadUrl = uploadResult.downloadUrl;
 
-        Alert.alert(
+        showAlert(
           '上传成功',
-          `✅ 文件已上传到Gitee v0.0.1\n📱 应用名称: ${currentApkInfo.name}\n🔗 下载链接: ${uploadResult.downloadUrl}\n`
+          `✅ 文件已上传到Gitee v0.0.1\n📱 应用名称: ${currentApkInfo.name}\n🔗 下载链接: ${uploadResult.downloadUrl}`,
+          [{ text: '确定', onPress: () => setAlertVisible(false) }]
         );
 
         // 刷新Release assets列表
         await loadReleaseAssets();
       } else {
-        Alert.alert('上传失败', uploadResult.error || '未知错误');
+        showAlert('上传失败', uploadResult.error || '未知错误', [
+          { text: '确定', onPress: () => setAlertVisible(false) },
+        ]);
       }
     } catch (error) {
       console.error('上传失败:', error);
-      Alert.alert('错误', '上传失败，请重试');
+      showAlert('错误', '上传失败，请重试', [
+        { text: '确定', onPress: () => setAlertVisible(false) },
+      ]);
     }
   };
 
@@ -131,7 +164,7 @@ export default function UploadScreen() {
 
         {/* 上传区域 */}
         <View className="mb-8">
-          <FileUpload onFileSelect={handleFileSelect} acceptedTypes={['.apk']} maxSize={50} />
+          <FileUpload onFileSelect={handleFileSelect} acceptedTypes={['.apk']} maxSize={100} />
         </View>
 
         {/* APK信息显示 */}
@@ -146,7 +179,7 @@ export default function UploadScreen() {
 
         {/* 已上传文件列表 */}
         {uploadedFiles.length > 0 && (
-          <View className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+          <View className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg mb-8">
             <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               已选择的文件
             </Text>
@@ -230,7 +263,9 @@ export default function UploadScreen() {
                   </View>
                   <Pressable
                     onPress={() => {
-                      Alert.alert('下载链接', asset.browser_download_url);
+                      showAlert('下载链接', asset.browser_download_url, [
+                        { text: '确定', onPress: () => setAlertVisible(false) },
+                      ]);
                     }}
                     className="bg-green-600 px-3 py-2 rounded-lg active:opacity-80"
                   >
@@ -256,11 +291,19 @@ export default function UploadScreen() {
             <Text className="text-blue-800 dark:text-blue-200 font-semibold ml-2">上传说明</Text>
           </View>
           <Text className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
-            • 支持 .apk 格式文件{'\n'}• 单个文件最大 50MB{'\n'}• 文件将上传到 Gitee v0.0.1{'\n'}•
+            • 支持 .apk 格式文件{'\n'}• 单个文件最大 100MB{'\n'}• 文件将上传到 Gitee v0.0.1{'\n'}•
             自动更新 apkData.json
           </Text>
         </View>
       </View>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
     </ScrollView>
   );
 }

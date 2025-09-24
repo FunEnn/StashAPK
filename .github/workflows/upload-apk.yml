@@ -3,7 +3,7 @@ name: Sync APK Data to GitHub
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 */2 * * *'
 
 env:
   GITEE_OWNER: ${{ secrets.GITEE_OWNER }}

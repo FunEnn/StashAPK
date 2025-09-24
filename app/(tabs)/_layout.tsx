@@ -31,6 +31,7 @@ export default function TabLayout() {
               title: '搜索',
               tabBarIcon: ({ color }) => <FontAwesome name="search" size={24} color={color} />,
               headerShown: false,
+              href: null,
             }}
           />
           <Tabs.Screen

@@ -1,5 +1,7 @@
 import { useColorTheme } from '@/hooks/useColorTheme';
-import { Alert, Linking, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Linking, Pressable, Text, View } from 'react-native';
+import { CustomAlert } from './common/CustomAlert';
 import ImageWithFallback from './common/ImageWithFallback';
 
 interface APKItemProps {
@@ -11,6 +13,25 @@ interface APKItemProps {
 export default function APKItem({ name, icon, downloadUrl }: APKItemProps) {
   const { isDarkMode } = useColorTheme();
   const defaultIcon = 'https://s2.loli.net/2025/09/05/sHNmMYuk4yB3jr9.jpg';
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as {
+      text: string;
+      onPress: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }[],
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    buttons: { text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }[]
+  ) => {
+    setAlertConfig({ title, message, buttons });
+    setAlertVisible(true);
+  };
 
   const handleDownload = async () => {
     if (downloadUrl) {
@@ -18,7 +39,9 @@ export default function APKItem({ name, icon, downloadUrl }: APKItemProps) {
         await Linking.openURL(downloadUrl);
       } catch (error) {
         console.error('无法打开浏览器:', error);
-        Alert.alert('错误', '无法打开下载链接，请稍后重试');
+        showAlert('错误', '无法打开下载链接，请稍后重试', [
+          { text: '确定', onPress: () => setAlertVisible(false) },
+        ]);
       }
     }
   };
@@ -49,6 +72,14 @@ export default function APKItem({ name, icon, downloadUrl }: APKItemProps) {
           </Text>
         </View>
       </View>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
     </Pressable>
   );
 }

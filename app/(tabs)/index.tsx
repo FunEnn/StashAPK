@@ -1,6 +1,6 @@
 import { applyUpdate, isUpdateAvailable } from '@/lib/utils/updates';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native';
 import APKList from '../../components/APKList';
 import { CustomAlert } from '../../components/common/CustomAlert';
 import { fetchAPKData } from '../../lib/api';
@@ -34,7 +34,8 @@ export default function HomeScreen() {
       const data = await fetchAPKData();
       setApks(data);
     } catch (error) {
-      Alert.alert('Error', '无法加载APK数据');
+      // 这里不需要显示错误提示，因为已经有空状态显示
+      console.error('加载APK数据失败:', error);
     } finally {
       setLoading(false);
       if (isRefresh) {

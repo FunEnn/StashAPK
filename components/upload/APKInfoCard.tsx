@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
 interface APKInfo {
@@ -37,7 +37,12 @@ export default function APKInfoCard({ apkInfo, onInfoChange }: APKInfoCardProps)
 
   const handleSave = () => {
     setIsEditing(false);
-    onInfoChange?.(editedInfo);
+    // 保存时保持图标不变，只更新名称和分类
+    const updatedInfo = {
+      ...editedInfo,
+      icon: apkInfo.icon, // 保持原始图标不变
+    };
+    onInfoChange?.(updatedInfo);
   };
 
   const handleCancel = () => {
@@ -80,21 +85,9 @@ export default function APKInfoCard({ apkInfo, onInfoChange }: APKInfoCardProps)
         <View className="flex-row items-center">
           <Ionicons name="image" size={20} color="#3b82f6" />
           <Text className="text-gray-600 dark:text-gray-400 ml-3 flex-1">图标:</Text>
-          {isEditing ? (
-            <TextInput
-              value={editedInfo.icon}
-              onChangeText={text => setEditedInfo({ ...editedInfo, icon: text })}
-              className="text-gray-900 dark:text-gray-100 font-medium bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg flex-1"
-              placeholder="输入图标URL"
-            />
-          ) : (
-            <Text
-              className="text-gray-900 dark:text-gray-100 font-medium text-sm"
-              numberOfLines={1}
-            >
-              {apkInfo.icon}
-            </Text>
-          )}
+          <Text className="text-gray-900 dark:text-gray-100 font-medium text-sm" numberOfLines={1}>
+            {apkInfo.icon}
+          </Text>
         </View>
 
         {/* 分类 */}
