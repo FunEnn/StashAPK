@@ -7,8 +7,9 @@ on:
       - master
     paths:
       - 'apk-data/apkData.json'
-      - '.github/workflows/deploy.yml'
   workflow_dispatch:
+  repository_dispatch:
+    types: [deploy-apk-data]
 
 permissions:
   contents: write
