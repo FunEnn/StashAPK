@@ -60,7 +60,17 @@ jobs:
           git checkout master
           git pull origin master || true
           git add apk-data/apkData.json
-          git commit -m "Update APK data - $(date)" || true
-          git push origin master
           
-          echo "✅ APK data synced successfully"
+          # 检查是否有变更
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update APK data - $(date)"
+            git push origin master
+            echo "✅ APK data synced and pushed successfully"
+            
+            # 触发部署工作流
+            echo "🚀 Triggering deployment workflow..."
+          fi
+          
+          echo "✅ APK data sync completed"

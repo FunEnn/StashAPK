@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import APKInfoCard from '../../components/upload/APKInfoCard';
 import FileUpload from '../../components/upload/FileUpload';
@@ -96,7 +96,7 @@ export default function UploadScreen() {
 
         Alert.alert(
           '上传成功',
-          `✅ 文件已上传到Gitee v0.0.1\n📱 应用名称: ${currentApkInfo.name}\n🔗 下载链接: ${uploadResult.downloadUrl}\n📝 `
+          `✅ 文件已上传到Gitee v0.0.1\n📱 应用名称: ${currentApkInfo.name}\n🔗 下载链接: ${uploadResult.downloadUrl}\n`
         );
 
         // 刷新Release assets列表
@@ -257,7 +257,7 @@ export default function UploadScreen() {
           </View>
           <Text className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
             • 支持 .apk 格式文件{'\n'}• 单个文件最大 50MB{'\n'}• 文件将上传到 Gitee v0.0.1{'\n'}•
-            自动更新 apk-data-only 分支的 apkData.json
+            自动更新 apkData.json
           </Text>
         </View>
       </View>
