@@ -11,11 +11,10 @@ export default function TabLayout() {
   return (
     <SearchProvider>
       <View style={{ paddingTop }} className="flex-1 bg-blue-600 dark:bg-gray-800">
-        <AppHeader onHomePress={() => router.push('/')} />
+        <AppHeader onHomePress={() => router.navigate('/')} />
         <Tabs
           screenOptions={{
-            tabBarStyle: { display: 'none' },
-            headerShown: false,
+            headerShown: true,
           }}
         >
           <Tabs.Screen
@@ -23,6 +22,23 @@ export default function TabLayout() {
             options={{
               title: '首页',
               tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
+              headerShown: false,
+            }}
+          />
+          <Tabs.Screen
+            name="search"
+            options={{
+              title: '搜索',
+              tabBarIcon: ({ color }) => <FontAwesome name="search" size={24} color={color} />,
+              headerShown: false,
+            }}
+          />
+          <Tabs.Screen
+            name="upload"
+            options={{
+              title: '上传',
+              tabBarIcon: ({ color }) => <FontAwesome name="upload" size={24} color={color} />,
+              headerShown: false,
             }}
           />
         </Tabs>

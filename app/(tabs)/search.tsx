@@ -3,10 +3,30 @@ import { useSearchContext } from '@/contexts/SearchContext';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 
 export default function SearchResults() {
   const { searchResults, searchQuery, performSearch } = useSearchContext();
   const [isLoading, setIsLoading] = useState(false);
+  const rotation = useSharedValue(0);
+
+  // 配置旋转动画
+  useEffect(() => {
+    if (isLoading) {
+      rotation.value = withRepeat(withTiming(360, { duration: 1000 }), -1, false);
+    } else {
+      rotation.value = 0;
+    }
+  }, [isLoading, rotation]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
 
   useEffect(() => {
     // 当组件挂载时，如果有搜索查询，执行搜索
@@ -23,7 +43,10 @@ export default function SearchResults() {
       <ScrollView className="flex-1">
         {isLoading ? (
           <View className="flex-1 items-center justify-center py-20">
-            <View className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <Animated.View
+              style={animatedStyle}
+              className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"
+            />
             <Text className="text-gray-500 dark:text-gray-400 mt-4">搜索中...</Text>
           </View>
         ) : searchResults.length > 0 ? (
@@ -37,7 +60,7 @@ export default function SearchResults() {
           </View>
         ) : (
           <View className="flex-1 items-center justify-center py-20 px-8">
-            <View className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg">
+            <View className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg items-center">
               <Ionicons name="search" size={64} color="#3b82f6" />
               <Text className="text-gray-600 dark:text-gray-300 text-lg font-semibold mt-6 text-center">
                 没有找到相关应用

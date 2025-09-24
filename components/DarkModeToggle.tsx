@@ -10,10 +10,7 @@ export default function DarkModeToggle() {
   const iconColor = isDarkMode ? '#fbbf24' : '#374151';
 
   return (
-    <TouchableOpacity
-      className="ml-3 p-3 rounded-xl active:bg-gray-200 dark:active:bg-gray-700 active:scale-95 transition-transform"
-      onPress={toggleDarkMode}
-    >
+    <TouchableOpacity className="ml-3 p-3 rounded-xl transition-transform" onPress={toggleDarkMode}>
       <Ionicons name={iconName} size={24} color={iconColor} />
     </TouchableOpacity>
   );

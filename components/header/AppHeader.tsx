@@ -70,6 +70,8 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
     try {
       await performSearch(value);
       setShowSearch(false);
+      // 跳转到搜索页面
+      router.navigate('/(tabs)/search');
     } catch (error) {
       console.error('搜索失败:', error);
     }
@@ -196,7 +198,7 @@ export default function AppHeader({ onHomePress, onSearchChange }: AppHeaderProp
                 className="flex-row items-center justify-between py-4 px-3 rounded-xl active:bg-blue-50 dark:active:bg-gray-700 mb-4"
                 onPress={() => {
                   setShowDrawer(false);
-                  router.push('/upload');
+                  router.navigate('/(tabs)/upload');
                 }}
               >
                 <View className="flex-row items-center">
